@@ -142,4 +142,19 @@ describe( 'rollup-plugin-npm', function () {
 			assert.ok( generated.code.indexOf( 'encode' ) < 0 );
 		});
 	});
+
+	it( 'allows main to be specified as an array', () => {
+		return rollup.rollup({
+			entry: 'samples/array-main-options/main.js',
+			plugins: [
+				npm({
+					main: [ 'foo' ]
+				})
+			]
+		}).then( bundle => {
+			const { code } = bundle.generate({ format: 'cjs' });
+			assert.ok( code.indexOf( `require('bar')` ) !== -1 );
+			assert.equal( executeBundle( bundle ).exports.foo, 'foo-main' );
+		});
+	});
 });

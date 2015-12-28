@@ -2,11 +2,19 @@ import { dirname } from 'path';
 import builtins from 'builtin-modules';
 import resolve from 'resolve';
 
+function valid ( option, id ) {
+	if ( Object.prototype.toString.call( option ) === '[object Array]' ) {
+		return ~option.indexOf( id );
+	}
+
+	return option;
+}
+
 export default function npm ( options ) {
 	options = options || {};
 
 	const skip = options.skip || [];
-	const useMain = options.main !== false;
+	if ( !( 'main' in options ) ) options.main = true;
 
 	return {
 		resolveId( importee, importer ) {
@@ -23,9 +31,12 @@ export default function npm ( options ) {
 					importee,
 					{
 						basedir: dirname( importer ),
-						packageFilter( pkg ) {
-							const id = pkg[ 'name' ];
-							if ( options.jsnext ) {
+						packageFilter ( pkg ) {
+							const id = pkg[ 'name' ] || importee;
+							const useJsnext = valid( options.jsnext, id );
+							const useMain = valid( options.main, id );
+
+							if ( useJsnext ) {
 								const main = pkg[ 'jsnext:main' ];
 								if ( main ) {
 									pkg[ 'main' ] = main;
@@ -35,6 +46,7 @@ export default function npm ( options ) {
 							} else if ( !useMain ) {
 								reject( Error( `To import from a package in node_modules (${id}), either options.jsnext or options.main must be true` ) );
 							}
+
 							return pkg;
 						}
 					},
